@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /*
 MINIGAL NANO
@@ -37,7 +37,7 @@ by Sébastien SAUVAGE.
 	$starttime = $mtime;
 */
 
-header('Content-Type: text/html; charset=utf-8'); // We use UTF-8 for proper international characters handling.
+header('Content-Type: text/html; charset=UTF-8'); // We use UTF-8 for proper international characters handling.
 $version = "0.3.7";
 ini_set("memory_limit","256M");
 
@@ -59,7 +59,7 @@ $comment = "";
 //-----------------------
 if (!function_exists('exif_read_data') && $display_exif == 1) {
 	$display_exif = 0;
-    $messages = "Error: PHP EXIF is not available. Set &#36;display_exif = 0; in config.php to remove this message";
+	$messages = "Error: PHP EXIF is not available. Set &#36;display_exif = 0; in config.php to remove this message";
 }
 
 //-----------------------
@@ -78,7 +78,7 @@ function padstring($name, $length) {
 	global $label_max_length;
 	if (!isset($length)) $length = $label_max_length;
 	if (strlen($name) > $length) {
-      return substr($name,0,$length) . "...";
+	  return substr($name,0,$length) . "...";
    } else return $name;
 }
 function getfirstImage($dirname) {
@@ -100,30 +100,32 @@ function getfirstImage($dirname) {
 function readEXIF($file) {
 		$exif_data = "";
 		$exif_idf0 = exif_read_data ($file,'IFD0' ,0 );
-        $emodel = $exif_idf0['Model'];
+		$emodel = $exif_idf0['Model'];
 
-        $efocal = $exif_idf0['FocalLength'];
-        list($x,$y) = split('/', $efocal);
-        $efocal = round($x/$y,0);
-       
-        $exif_exif = exif_read_data ($file,'EXIF' ,0 );
-        $eexposuretime = $exif_exif['ExposureTime'];
-       
-        $efnumber = $exif_exif['FNumber'];
-        list($x,$y) = split('/', $efnumber);
-        $efnumber = round($x/$y,0);
+		$efocal = $exif_idf0['FocalLength'];
+		//Next is only cosmectic need but give an error due to division by zero		
+		//list($x,$y) = preg_split('/', $efocal);
+		//$efocal = round($x/$y,0);
+	   
+		$exif_exif = exif_read_data ($file,'EXIF' ,0 );
+		$eexposuretime = $exif_exif['ExposureTime'];
+	   
+		$efnumber = $exif_exif['FNumber'];
+		//Next is only cosmectic need but give an error due to division by zero
+		//list($x,$y) = preg_split('/', $efnumber);
+		//$efnumber = round($x/$y,0);
 
-        $eiso = $exif_exif['ISOSpeedRatings'];
-               
-        $exif_date = exif_read_data ($file,'IFD0' ,0 );
-        $edate = $exif_date['DateTime'];
+		$eiso = $exif_exif['ISOSpeedRatings'];
+			   
+		$exif_date = exif_read_data ($file,'IFD0' ,0 );
+		$edate = $exif_date['DateTime'];
 		if (strlen($emodel) > 0 OR strlen($efocal) > 0 OR strlen($eexposuretime) > 0 OR strlen($efnumber) > 0 OR strlen($eiso) > 0) $exif_data .= "::";
-        if (strlen($emodel) > 0) $exif_data .= "$emodel";
-        if ($efocal > 0) $exif_data .= " | $efocal" . "mm";
-        if (strlen($eexposuretime) > 0) $exif_data .= " | $eexposuretime" . "s";
-        if ($efnumber > 0) $exif_data .= " | f$efnumber";
-        if (strlen($eiso) > 0) $exif_data .= " | ISO $eiso";
-        return($exif_data);
+		if (strlen($emodel) > 0) $exif_data .= "$emodel";
+		if ($efocal > 0) $exif_data .= " | $efocal" . "mm";
+		if (strlen($eexposuretime) > 0) $exif_data .= " | $eexposuretime" . "s";
+		if ($efnumber > 0) $exif_data .= " | f$efnumber";
+		if (strlen($eiso) > 0) $exif_data .= " | ISO $eiso";
+		return($exif_data);
 }
 function checkpermissions($file) {
 	global $messages;
@@ -150,7 +152,12 @@ $requestedDir = '';
 if (!empty($_GET['dir'])) $requestedDir = $_GET['dir'];
 $thumbdir = rtrim('photos/'.$requestedDir,'/');
 
-$thumbdir = str_replace('/..', '', $thumbdir); // Prevent directory traversal attacks.
+//$thumbdir = str_replace('/..', '', $thumbdir); // Prevent directory traversal attacks.
+if(strstr($thumbdir, '..') !== FALSE) {
+	$requestedDir = '';
+	$thumbdir = rtrim('photos/','/');
+}
+
 $currentdir = GALLERY_ROOT . $thumbdir;
 
 //-----------------------
@@ -158,10 +165,10 @@ $currentdir = GALLERY_ROOT . $thumbdir;
 //-----------------------
 $files = array();
 $dirs = array();
- if ($handle = opendir($currentdir))
+ if (is_directory($currentdir) && $handle = opendir($currentdir))
  {
 	while (false !== ($file = readdir($handle)))
-    {
+	{
 // 1. LOAD FOLDERS
 		if (is_directory($currentdir . "/" . $file))
 			{ 
@@ -190,7 +197,7 @@ $dirs = array();
 							$dirs[] = array(
 								"name" => $file,
 								"date" => filemtime($currentdir . "/" . $file),
-								"html" => "<li><a href='?dir=" . ltrim($requestedDir . "/" . $file, "/") . "'><em>" . padstring($file) . "</em><span></span><img src='" . GALLERY_ROOT . "images/folder_" . strtolower($folder_color) . ".png' width='$thumb_size' height='$thumb_size' alt='$label_loading' /></a></li>");
+								"html" => "<li><a href='?dir=" . ltrim($requestedDir . "/" . $file, "/") . "'><em>" . padstring($file, $label_max_length) . "</em><span></span><img src='" . GALLERY_ROOT . "images/folder_" . strtolower($folder_color) . ".png' width='$thumb_size' height='$thumb_size' alt='$label_loading' /></a></li>");
 						}
 					}
 				}
@@ -204,6 +211,9 @@ if (file_exists($currentdir ."/captions.txt"))
 	while (!feof($file_handle) ) 
 	{	
 		$line_of_text = fgets($file_handle);
+		if (empty($line_of_text)) {
+			continue;
+		}
 		$parts = explode('/n', $line_of_text);
 		foreach($parts as $img_capts)
 		{
@@ -215,49 +225,64 @@ if (file_exists($currentdir ."/captions.txt"))
 }
 
 // 3. LOAD FILES
-	        	if ($file != "." && $file != ".." && $file != "folder.jpg")
+				if ($file != "." && $file != ".." && $file != "folder.jpg")
 		  		{
 		  			// JPG, GIF and PNG
 		  			if (preg_match("/.jpg$|.gif$|.png$/i", $file))
 		  			{
 						//Read EXIF
-						if ($display_exif == 1) $img_captions[$file] .= readEXIF($currentdir . "/" . $file);
-
-                        // Read the optionnal image title and caption in html file (image.jpg --> image.jpg.html)
-                        // Format: title::caption
-                        // Example: My cat::My cat like to <i>roll</i> on the floor.
-                        // If file is not provided, image filename will be used instead.
+						if (!array_key_exists($file, $img_captions)) {
+							if ($display_exif == 1)
+							{
+								$exifReaden= readEXIF($currentdir . "/" . $file);
+								//Add to the caption all the EXIF information
+								$img_captions[$file] = $file.$exifReaden;
+							}
+							else
+							{
+								//If no EXIF, just use the filename as caption
+								$img_captions[$file] = $file;
+							}
+						}
+						// Read the optionnal image title and caption in html file (image.jpg --> image.jpg.html)
+						// Format: title::caption
+						// Example: My cat::My cat like to <i>roll</i> on the floor.
+						// If file is not provided, image filename will be used instead.
 						checkpermissions($currentdir . "/" . $file);
 
-                        $img_captions[$file] = $file;
-                        if (is_file($currentdir.'/'.$file.'.html')) { $img_captions[$file] = $file.'::'.htmlspecialchars(file_get_contents($currentdir.'/'.$file.'.html'),ENT_QUOTES); }
-
-			  			$files[] = array (
+						if (is_file($currentdir.'/'.$file.'.html')) { $img_captions[$file] = $file.'::'.htmlspecialchars(file_get_contents($currentdir.'/'.$file.'.html'),ENT_QUOTES); }
+						if ($lazyload) {
+							$files[] = array (
 			  				"name" => $file,
 							"date" => filemtime($currentdir . "/" . $file),
 							"size" => filesize($currentdir . "/" . $file),
-				  			"html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title=\"".htmlentities($img_captions[$file])."\"><span></span><img src='" . GALLERY_ROOT . "createthumb.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size' alt='$label_loading' /></a></li>");
+				  			"html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title=\"".htmlentities($img_captions[$file])."\"><img class=\"b-lazy\" src=data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw== data-src='" . GALLERY_ROOT . "createthumb.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size' alt='$label_loading' /></a></li>");						} else {
+							$files[] = array (
+			  				"name" => $file,
+							"date" => filemtime($currentdir . "/" . $file),
+							"size" => filesize($currentdir . "/" . $file),
+				  			"html" => "<li><a href='" . $currentdir . "/" . $file . "' rel='lightbox[billeder]' title=\"".htmlentities($img_captions[$file])."\"><img  src='" . GALLERY_ROOT . "createthumb.php?filename=" . $thumbdir . "/" . $file . "&amp;size=$thumb_size' alt='$label_loading' /></a></li>");						}
 		  			}
 					// Other filetypes
 					$extension = "";
-		        	if (preg_match("/.pdf$/i", $file)) $extension = "PDF"; // PDF
-		        	if (preg_match("/.zip$/i", $file)) $extension = "ZIP"; // ZIP archive
-		        	if (preg_match("/.rar$|.r[0-9]{2,}/i", $file)) $extension = "RAR"; // RAR Archive
-		        	if (preg_match("/.tar$/i", $file)) $extension = "TAR"; // TARball archive
-		        	if (preg_match("/.gz$/i", $file)) $extension = "GZ"; // GZip archive
-		        	if (preg_match("/.doc$|.docx$/i", $file)) $extension = "DOCX"; // Word
-		        	if (preg_match("/.ppt$|.pptx$/i", $file)) $extension = "PPTX"; //Powerpoint
-		        	if (preg_match("/.xls$|.xlsx$/i", $file)) $extension = "XLXS"; // Excel
-		        			        	
-		        	if ($extension != "")
+					if (preg_match("/.pdf$/i", $file)) $extension = "PDF"; // PDF
+					if (preg_match("/.zip$/i", $file)) $extension = "ZIP"; // ZIP archive
+					if (preg_match("/.rar$|.r[0-9]{2,}/i", $file)) $extension = "RAR"; // RAR Archive
+					if (preg_match("/.tar$/i", $file)) $extension = "TAR"; // TARball archive
+					if (preg_match("/.gz$/i", $file)) $extension = "GZ"; // GZip archive
+					if (preg_match("/.doc$|.docx$/i", $file)) $extension = "DOCX"; // Word
+					if (preg_match("/.ppt$|.pptx$/i", $file)) $extension = "PPTX"; //Powerpoint
+					if (preg_match("/.xls$|.xlsx$/i", $file)) $extension = "XLXS"; // Excel
+										
+					if ($extension != "")
 			  		{
 		  				$files[] = array (
 		  					"name" => $file,
 							"date" => filemtime($currentdir . "/" . $file),
 							"size" => filesize($currentdir . "/" . $file),
 			  				"html" => "<li><a href='" . $currentdir . "/" . $file . "' title='$file'><em-pdf>" . padstring($file, 20) . "</em-pdf><span></span><img src='" . GALLERY_ROOT . "images/filetype_" . $extension . ".png' width='$thumb_size' height='$thumb_size' alt='$file' /></a></li>");
-        			}
-     			}   		
+					}
+	 			}   		
 	}
   closedir($handle);
   } else die("ERROR: Could not open ".htmlspecialchars(stripslashes($currentdir))." for reading!");
@@ -285,20 +310,20 @@ if (sizeof($files) > 0)
 		$date[$key] = strtolower($row['date']);
 		$size[$key] = strtolower($row['size']);
 	}
-	if (strtoupper($sortdir_files) == "DESC") array_multisort($$sorting_files, SORT_DESC, $name, SORT_ASC, $files);
-	else array_multisort($$sorting_files, SORT_ASC, $name, SORT_ASC, $files);
+	if (strtoupper($sortdir_files) == "DESC") @array_multisort($$sorting_files, SORT_DESC, $name, SORT_ASC, $files);
+	else @array_multisort($$sorting_files, SORT_ASC, $name, SORT_ASC, $files);
 }
 
 //-----------------------
 // OFFSET DETERMINATION
 //-----------------------
-    if (!isset($_GET["page"])) $_GET["page"] = 1;
+	if (!isset($_GET["page"])) $_GET["page"] = 1;
 	$offset_start = ($_GET["page"] * $thumbs_pr_page) - $thumbs_pr_page;
 	if (!isset($_GET["page"])) $offset_start = 0;
 	$offset_end = $offset_start + $thumbs_pr_page;
 	if ($offset_end > sizeof($dirs) + sizeof($files)) $offset_end = sizeof($dirs) + sizeof($files);
 
-	if ($_GET["page"] == "all")
+	if ($_GET["page"] == "all" || $lazyload)
 	{
 		$offset_start = 0;
 		$offset_end = sizeof($dirs) + sizeof($files);
@@ -307,7 +332,7 @@ if (sizeof($files) > 0)
 //-----------------------
 // PAGE NAVIGATION
 //-----------------------
-if (sizeof($dirs) + sizeof($files) > $thumbs_pr_page)
+if (!$lazyload && sizeof($dirs) + sizeof($files) > $thumbs_pr_page)
 {
 	$page_navigation .= "$label_page ";
 	for ($i=1; $i <= ceil((sizeof($files) + sizeof($dirs)) / $thumbs_pr_page); $i++)
@@ -349,7 +374,7 @@ if ($requestedDir != "")
 //Include hidden links for all images BEFORE current page so lightbox is able to browse images on different pages
 for ($y = 0; $y < $offset_start - sizeof($dirs); $y++)
 {	
-	$breadcrumb_navigation .= "<a href='" . $currentdir . "/" . $files[$y]["name"] . "' rel='lightbox[billeder]' class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
+	$breadcrumb_navigation .= "<a href='" . $currentdir . "/" . $files[$y]["name"] . "' class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
 }
 
 //-----------------------
@@ -382,7 +407,7 @@ for ($i = $offset_start - sizeof($dirs); $i < $offset_end && $offset_current < $
 if ($i<0) $i=1;
 for ($y = $i; $y < sizeof($files); $y++)
 {	
-	$page_navigation .= "<a href='" . $currentdir . "/" . $files[$y]["name"] . "' rel='lightbox[billeder]'  class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
+	$page_navigation .= "<a href='" . $currentdir . "/" . $files[$y]["name"] . "'  class='hidden' title='" . $img_captions[$files[$y]["name"]] . "'></a>";
 }
 
 //-----------------------
@@ -396,9 +421,9 @@ $messages = "<div id=\"topbar\">" . $messages . " <a href=\"#\" onclick=\"docume
 $comment_filepath = $currentdir . $file . "/comment.html";
 if (file_exists($comment_filepath))
 {
-    $fd = fopen($comment_filepath, "r");
-    $comment = utf8_encode(fread($fd,filesize ($comment_filepath))); // utf8_encode to convert from iso-8859 to UTF-8
-    fclose($fd);
+	$fd = fopen($comment_filepath, "r");
+	$comment = fread($fd,filesize ($comment_filepath));
+	fclose($fd);
 }
 //PROCESS TEMPLATE FILE
 	if(GALLERY_ROOT != "") $templatefile = GALLERY_ROOT . "templates/integrate.html";
