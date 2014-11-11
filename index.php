@@ -165,88 +165,71 @@ $currentdir = GALLERY_ROOT . $thumbdir;
 //-----------------------
 $files = array();
 $dirs = array();
- if (is_directory($currentdir) && $handle = opendir($currentdir))
- {
-	while (false !== ($file = readdir($handle)))
-	{
-// 1. LOAD FOLDERS
-		if (is_directory($currentdir . "/" . $file))
-			{
-				if ($file != "." && $file != ".." )
-				{
-					checkpermissions($currentdir . "/" . $file); // Check for correct file permission
-					// Set thumbnail to folder.jpg if found:
-					if (file_exists($currentdir. '/' . $file . '/folder.jpg'))
-					{
-						$linkParams = http_build_query(
-							array('dir' => ltrim("$requestedDir/$file", '/')),
-							'',
-							'&amp;'
-						);
-						$linkUrl = "?$linkParams";
+if (is_directory($currentdir) && $handle = opendir($currentdir)) {
+	while (false !== ($file = readdir($handle))) {
+		unset($firstimage);
 
-						$imgParams = http_build_query(
-							array(
-								'filename' => "$currentdir/$file/folder.jpg",
-								'size' => $thumb_size
-							),
-							'',
-							'&amp;'
-						);
-						$imgUrl = GALLERY_ROOT . "createthumb.php?$imgParams";
+		// 1. LOAD FOLDERS
+		if (is_directory($currentdir . "/" . $file)) {
+			$invalidFolders = array('.', '..');
+			if (in_array($file, $invalidFolders)) {
+				continue;
+			}
 
-						$dirs[] = array(
-							"name" => $file,
-							"date" => filemtime($currentdir . "/" . $file . "/folder.jpg"),
-							"html" => "<li><a href=\"{$linkUrl}\"><em>" . padstring($file, $label_max_length) . "</em><span></span><img src=\"{$imgUrl}\"  alt=\"$label_loading\" /></a></li>"
-						);
-					}  else {
-					// Set thumbnail to first image found (if any):
-						unset ($firstimage);
-						$firstimage = getfirstImage("$currentdir/" . $file);
+			checkpermissions($currentdir . "/" . $file); // Check for correct file permission
 
-						if ($firstimage != "") {
-							$linkParams = http_build_query(
-								array('dir' => ltrim("$requestedDir/$file", '/')),
-								'',
-								'&amp;'
-							);
-							$linkUrl = "?$linkParams";
+			// Set thumbnail to folder.jpg if found:
+			$targetFile = "$currentdir/$file/folder.jpg";
+			if (file_exists($targetFile)) {
+				$fileName = $targetFile;
 
-							$imgParams = http_build_query(
-								array(
-									'filename' => "$thumbdir/$file/$firstimage",
-									'size' => $thumb_size
-								),
-								'',
-								'&amp;'
-							);
-							$imgUrl = GALLERY_ROOT . "createthumb.php?$imgParams";
+				$imgParams = http_build_query(
+					array(
+						'filename' => $fileName,
+						'size' => $thumb_size
+					),
+					'',
+					'&amp;'
+				);
+				$imgUrl = GALLERY_ROOT . "createthumb.php?$imgParams";
 
-							$dirs[] = array(
-								"name" => $file,
-								"date" => filemtime($currentdir . "/" . $file),
-								"html" => "<li><a href=\"{$linkUrl}\"><em>" . padstring($file, $label_max_length) . "</em><span></span><img src=\"{$imgUrl}\"  alt='$label_loading' /></a></li>"
-							);
-						} else {
-						// If no folder.jpg or image is found, then display default icon:
-							$linkParams = http_build_query(
-								array('dir' => ltrim("$requestedDir/$file", '/')),
-								'',
-								'&amp;'
-							);
-							$linkUrl = "?$linkParams";
-							$imgUrl = GALLERY_ROOT . 'images/folder_' . strtolower($folder_color) . '.png';
+			} else {
+			// Set thumbnail to first image found (if any):
+				$targetFile = "$currentdir/$file";
+				$firstimage = getfirstImage($targetFile);
 
-							$dirs[] = array(
-								"name" => $file,
-								"date" => filemtime($currentdir . "/" . $file),
-								"html" => "<li><a href=\"{$linkUrl}\"><em>" . padstring($file, $label_max_length) . "</em><span></span><img src=\"{$imgUrl}\" width='$thumb_size' height='$thumb_size' alt='$label_loading' /></a></li>"
-							);
-						}
-					}
+				if ($firstimage != "") {
+					$fileName = "$thumbdir/$file/$firstimage";
+
+					$imgParams = http_build_query(
+						array(
+							'filename' => $fileName,
+							'size' => $thumb_size
+						),
+						'',
+						'&amp;'
+					);
+					$imgUrl = GALLERY_ROOT . "createthumb.php?$imgParams";
+
+				} else {
+					$imgUrl = GALLERY_ROOT . 'images/folder_' . strtolower($folder_color) . '.png';
 				}
 			}
+
+			// Making the link
+			$linkParams = http_build_query(
+				array('dir' => ltrim("$requestedDir/$file", '/')),
+				'',
+				'&amp;'
+			);
+			$linkUrl = "?$linkParams";
+
+			$dirs[] = array(
+				"name" => $file,
+				"date" => filemtime($targetFile),
+				"html" => "<li><a href=\"{$linkUrl}\"><em>" . padstring($file, $label_max_length) . "</em><span></span><img src=\"{$imgUrl}\" width='$thumb_size' height='$thumb_size' alt='$label_loading' /></a></li>"
+			);
+		}
 
 // 2. LOAD CAPTIONS
 $img_captions['']='';
